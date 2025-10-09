@@ -113,16 +113,16 @@ Production folder needs to contain a secrets.yaml for the production environment
 Build all docker images and tag them accordingly to push to Artifact Registry.
 ```bash
 # Build the Api gateway 
-docker build -t {REGION}-docker.pkg.dev/{PROJECT_ID}/ride-sharing/api-gateway:latest --platform linux/amd64 -f infra/production/docker/api-gateway.Dockerfile .
+docker build -t {REGION}-docker.pkg.dev/{PROJECT_ID}/ride-booking/api-gateway:latest --platform linux/amd64 -f infra/production/docker/api-gateway.Dockerfile .
 
 # Build the Driver service 
-docker build -t {REGION}-docker.pkg.dev/{PROJECT_ID}/ride-sharing/driver-service:latest --platform linux/amd64 -f infra/production/docker/driver-service.Dockerfile .
+docker build -t {REGION}-docker.pkg.dev/{PROJECT_ID}/ride-booking/driver-service:latest --platform linux/amd64 -f infra/production/docker/driver-service.Dockerfile .
 
 # Build the Trip service 
-docker build -t {REGION}-docker.pkg.dev/{PROJECT_ID}/ride-sharing/trip-service:latest --platform linux/amd64 -f infra/production/docker/trip-service.Dockerfile .
+docker build -t {REGION}-docker.pkg.dev/{PROJECT_ID}/ride-booking/trip-service:latest --platform linux/amd64 -f infra/production/docker/trip-service.Dockerfile .
 
 # Build the Payment service 
-docker build -t {REGION}-docker.pkg.dev/{PROJECT_ID}/ride-sharing/payment-service:latest --platform linux/amd64 -f infra/production/docker/payment-service.Dockerfile .
+docker build -t {REGION}-docker.pkg.dev/{PROJECT_ID}/ride-booking/payment-service:latest --platform linux/amd64 -f infra/production/docker/payment-service.Dockerfile .
 ```
 
 ## 3. Create a Artifact Registry repository
@@ -145,7 +145,7 @@ You can either run a `gcloud` command to start a GKE cluster or manually create 
 Connect to your remote cluster and apply the kubernetes manifests.
 
 ```bash
-gcloud container clusters get-credentials ride-sharing --region {REGION}--project {PROJECT_ID}
+gcloud container clusters get-credentials ride-booking --region {REGION}--project {PROJECT_ID}
 ```
 
 Next, upload each manifest by hand to make sure the correct order is maintained.

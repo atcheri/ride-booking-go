@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"ride-sharing/shared/env"
+	"github.com/atcheri/ride-booking-go/shared/env"
 )
 
 var (
