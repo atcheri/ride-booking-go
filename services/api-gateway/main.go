@@ -12,12 +12,23 @@ var (
 )
 
 func main() {
-	log.Println("Starting API Gateway")
+	log.Printf("Starting API Gateway on port: %s", httpAddr)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Hello from API Gateway"))
 	})
 
-	http.ListenAndServe(httpAddr, nil)
+	mux.HandleFunc("POST /trip/preview", handleTripPreview)
+
+	server := &http.Server{
+		Addr:    httpAddr,
+		Handler: mux,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
+		log.Printf("HTTP server error: %v", err)
+	}
 }
