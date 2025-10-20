@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/models"
-	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/repositories"
-	"github.com/atcheri/ride-booking-go/services/trip-service/internal/services"
+	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/repository"
+	"github.com/atcheri/ride-booking-go/services/trip-service/internal/service"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func main() {
 	ctx := context.Background()
-	inMemoryRepository := repositories.NewInMemoryRepository()
-	tripService := services.NewTripService(inMemoryRepository)
+	inMemoryRepository := repository.NewInMemoryRepository()
+	tripService := service.NewTripService(inMemoryRepository)
 
 	fare := &models.RideFareModel{
 		ID:     primitive.NewObjectID(),

@@ -1,18 +1,18 @@
-package services
+package service
 
 import (
 	"context"
 
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/models"
-	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/repositories"
+	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/repository"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type TripService struct {
-	tripRepository repositories.TripRepository
+	tripRepository repository.TripRepository
 }
 
-func NewTripService(repo repositories.TripRepository) *TripService {
+func NewTripService(repo repository.TripRepository) *TripService {
 	return &TripService{
 		tripRepository: repo,
 	}
