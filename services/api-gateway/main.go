@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/atcheri/ride-booking-go/shared/env"
 )
@@ -28,7 +33,28 @@ func main() {
 		Handler: mux,
 	}
 
-	if err := server.ListenAndServe(); err != nil {
-		log.Printf("HTTP server error: %v", err)
+	serverErrorCh := make(chan error, 1)
+
+	go func() {
+		log.Printf("APIGateway listening on port %s", httpAddr)
+		serverErrorCh <- server.ListenAndServe()
+	}()
+
+	shutDownCh := make(chan os.Signal, 1)
+	signal.Notify(shutDownCh, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case err := <-serverErrorCh:
+		log.Printf("error starting the APIGateway: %v", err)
+	case sig := <-shutDownCh:
+		log.Printf("APIGateway is shutting down due to %v signal", sig)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := server.Shutdown(ctx); err != nil {
+			log.Printf("failed to gracefully shutdown APIGateway: %v", err)
+			server.Close()
+		}
 	}
+
 }

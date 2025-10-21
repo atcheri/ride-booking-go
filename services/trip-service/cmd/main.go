@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	h "github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/http"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/repository"
@@ -30,7 +35,28 @@ func main() {
 		Handler: mux,
 	}
 
-	if err := server.ListenAndServe(); err != nil {
-		log.Printf("TRIP SERVICE HTTP server error: %v", err)
+	serverErrorChan := make(chan error, 1)
+
+	go func() {
+		log.Printf("trip-service server listening on port %s", httpAddr)
+		serverErrorChan <- server.ListenAndServe()
+	}()
+
+	shutDownCh := make(chan os.Signal, 1)
+	signal.Notify(shutDownCh, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case err := <-serverErrorChan:
+		log.Printf("error starting the trip-service server: %v", err)
+	case sig := <-shutDownCh:
+		log.Printf("trip-service server is shutting down due to %v signal", sig)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
+		defer cancel()
+		if err := server.Shutdown(ctx); err != nil {
+			log.Printf("failed to gracefully shutdown trip-service server: %v", err)
+			server.Close()
+		}
 	}
+
 }
