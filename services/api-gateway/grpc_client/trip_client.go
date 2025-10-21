@@ -1,0 +1,32 @@
+package grpcclient
+
+import (
+	pb "github.com/atcheri/ride-booking-grpc-proto/golang/trip"
+	"google.golang.org/grpc"
+)
+
+type tripServiceClient struct {
+	Client pb.TripServiceClient
+	conn   *grpc.ClientConn
+}
+
+func NewTripServiceClient(url string) (*tripServiceClient, error) {
+	conn, err := grpc.NewClient(url)
+	if err != nil {
+		return nil, err
+	}
+
+	client := pb.NewTripServiceClient(conn)
+	return &tripServiceClient{
+		Client: client,
+		conn:   conn,
+	}, nil
+}
+
+func (c *tripServiceClient) Close() {
+	if c.conn != nil {
+		if err := c.conn.Close(); err != nil {
+			return
+		}
+	}
+}
