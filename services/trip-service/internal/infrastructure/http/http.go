@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/models"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/service"
 	"github.com/atcheri/ride-booking-go/shared/types"
 )
@@ -27,13 +26,8 @@ func (s *HttpHandler) HandleTripPreview(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	fare := &models.RideFareModel{
-		UserID: "42",
-	}
-
 	ctx := r.Context()
-
-	t, err := s.Service.CreateTrip(ctx, fare)
+	t, err := s.Service.GetRoute(ctx, &reqBody.Pickup, &reqBody.Destination)
 	if err != nil {
 		log.Println(err)
 	}
