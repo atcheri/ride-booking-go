@@ -13,6 +13,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+var (
+	osrmApiV1Endpoint = "http://router.project-osrm.org/route/v1/driving"
+)
+
 type TripService struct {
 	tripRepository repository.TripRepository
 }
@@ -36,7 +40,8 @@ func (s *TripService) CreateTrip(ctx context.Context, ride *models.RideFareModel
 
 func (s *TripService) GetRoute(ctx context.Context, pickup, destination *types.Coordinate) (*types.OsrmApiResponse, error) {
 	url := fmt.Sprintf(
-		"http://router.project-osrm.org/route/v1/driving/%f,%f;%f,%f?overview=full&geometries=geojson",
+		"%s/%f,%f;%f,%f?overview=full&geometries=geojson",
+		osrmApiV1Endpoint,
 		pickup.Longitude, pickup.Latitude,
 		destination.Longitude, destination.Latitude,
 	)
