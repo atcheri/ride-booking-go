@@ -8,11 +8,16 @@ import { getGeohashBounds } from '../utils/geohash';
 import { useMemo, useRef, useState } from 'react';
 import { MapClickHandler } from './MapClickHandler';
 import { Button } from './ui/button';
-import { RouteFare, RequestRideProps, TripPreview, HTTPTripStartResponse } from "../types";
+import { RouteFare, RequestRideProps, TripPreview, HTTPTripStartResponse, Coordinate } from "../types";
 import { RoutingControl } from "./RoutingControl";
 import { API_URL } from '../constants';
 import { RiderTripOverview } from './RiderTripOverview';
 import { BackendEndpoints, HTTPTripPreviewRequestPayload, HTTPTripPreviewResponse, HTTPTripStartRequestPayload } from '../contracts';
+
+const START_LOCATION: Coordinate = {
+    latitude: 50.95834043721651,
+    longitude: 7.010111747576045
+}
 
 const userMarker = new L.Icon({
     iconUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Map_pin_icon.svg/176px-Map_pin_icon.svg.png",
@@ -38,10 +43,7 @@ export default function RiderMap({ onRouteSelected }: RiderMapProps) {
     const userID = useMemo(() => crypto.randomUUID(), [])
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const location = {
-        latitude: 37.7749,
-        longitude: -122.4194,
-    };
+    const location = START_LOCATION;
 
     const {
         drivers,
