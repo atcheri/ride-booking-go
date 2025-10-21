@@ -1,36 +1,36 @@
 package main
 
 import (
-	"context"
 	"log"
-	"time"
+	"net/http"
 
-	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/models"
+	h "github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/http"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/repository"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/service"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/atcheri/ride-booking-go/shared/env"
+)
+
+var (
+	httpAddr = env.GetString("HTTP_ADDR", ":8083")
 )
 
 func main() {
-	ctx := context.Background()
 	inMemoryRepository := repository.NewInMemoryRepository()
 	tripService := service.NewTripService(inMemoryRepository)
+	httphandler := h.HttpHandler{Service: tripService}
 
-	fare := &models.RideFareModel{
-		ID:     primitive.NewObjectID(),
-		UserID: "fake-user-id",
+	log.Printf("Starting API Gateway on port: %s", httpAddr)
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("POST /preview", httphandler.HandleTripPreview)
+
+	server := &http.Server{
+		Addr:    httpAddr,
+		Handler: mux,
 	}
 
-	t, err := tripService.CreateTrip(ctx, fare)
-	if err != nil {
-		log.Println(err)
-		return
+	if err := server.ListenAndServe(); err != nil {
+		log.Printf("TRIP SERVICE HTTP server error: %v", err)
 	}
-
-	log.Println(t)
-
-	for {
-		time.Sleep(time.Second)
-	}
-
 }
