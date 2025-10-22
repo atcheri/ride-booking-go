@@ -3,7 +3,7 @@ module github.com/atcheri/ride-booking-go
 go 1.25.3
 
 require (
-	github.com/atcheri/ride-booking-grpc-proto/golang/trip v0.1.1
+	github.com/atcheri/ride-booking-grpc-proto/golang/trip v0.2.1
 	github.com/gorilla/websocket v1.5.3
 	go.mongodb.org/mongo-driver v1.17.4
 	google.golang.org/grpc v1.76.0
