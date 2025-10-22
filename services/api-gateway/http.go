@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 
 	grpcclient "github.com/atcheri/ride-booking-go/services/api-gateway/grpc_client"
 	"github.com/atcheri/ride-booking-go/shared/contracts"
@@ -32,35 +30,22 @@ func handleTripPreview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonBody, _ := json.Marshal(body)
-	reader := bytes.NewReader(jsonBody)
-
-	client, err := grpcclient.NewTripServiceClient(tripServiceURL)
+	tripServiceClient, err := grpcclient.NewTripServiceClient(tripServiceURL)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Closing the connection on each request
-	defer client.Close()
+	defer tripServiceClient.Close()
 
-	resp, err := http.Post("http://trip-service:8083/preview", "application-json", reader)
+	tripPreviewResp, err := tripServiceClient.Client.PreviewTrip(r.Context(), body.ToProto())
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, contracts.APIError{
-			Code:    strconv.Itoa(http.StatusNotFound),
-			Message: err.Error(),
-		})
+		log.Printf("failed to preview the trip: %v", err)
+		http.Error(w, "failed to preview the trip", http.StatusInternalServerError)
 		return
 	}
 
-	defer resp.Body.Close()
-
-	var respBody any
-	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
-		http.Error(w, "failed to parse JSON data from trip service", http.StatusBadRequest)
-		return
-	}
-
-	response := contracts.APIResponse{Data: respBody}
+	response := contracts.APIResponse{Data: tripPreviewResp}
 
 	writeJSON(w, http.StatusCreated, response)
 }
