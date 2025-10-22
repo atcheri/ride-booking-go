@@ -3,10 +3,13 @@ package grpc
 import (
 	"context"
 	"log"
+	"time"
 
+	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/models"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/service"
 	"github.com/atcheri/ride-booking-go/shared/types"
 	pb "github.com/atcheri/ride-booking-grpc-proto/golang/trip"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -47,5 +50,24 @@ func (h *gRPCHandler) PreviewTrip(ctx context.Context, req *pb.PreviewTripReques
 	return &pb.PreviewTripResponse{
 		Route:     resp.ToProto(),
 		RideFares: []*pb.RideFare{},
+	}, nil
+}
+
+func (h *gRPCHandler) CreateTrip(ctx context.Context, req *pb.CreateTripRequest) (*pb.CreateTripResponse, error) {
+	resp, err := h.service.CreateTrip(ctx, &models.RideFareModel{
+		ID:                primitive.ObjectID{},
+		UserID:            "",
+		PackageSlug:       "",
+		TotalPriceInCents: 0,
+		ExpiresAt:         time.Time{},
+	})
+
+	if err != nil {
+		log.Println(err)
+		return nil, status.Errorf(codes.Internal, "failed to create trip: %v", err)
+	}
+
+	return &pb.CreateTripResponse{
+		TripID: resp.ID.Hex(),
 	}, nil
 }

@@ -49,3 +49,39 @@ func handleTripPreview(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusCreated, response)
 }
+
+func handleStartTrip(w http.ResponseWriter, r *http.Request) {
+	var body startTripRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "failed to parse JSON data", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	// validation
+	if body.UserID == "" {
+		http.Error(w, "user ID is required", http.StatusBadRequest)
+		return
+	}
+
+	tripServiceClient, err := grpcclient.NewTripServiceClient(tripServiceURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Closing the connection on each request
+	defer tripServiceClient.Close()
+
+	ceateTripResp, err := tripServiceClient.Client.CreateTrip(r.Context(), body.ToProto())
+	if err != nil {
+		log.Printf("failed to create the trip: %v", err)
+		http.Error(w, "failed to create the trip", http.StatusInternalServerError)
+		return
+	}
+
+	response := contracts.APIResponse{Data: ceateTripResp}
+
+	writeJSON(w, http.StatusCreated, response)
+}
