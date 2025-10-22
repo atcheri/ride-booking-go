@@ -1,5 +1,5 @@
-github.com/atcheri/ride-booking-grpc-proto/golang/trip v0.2.1 h1:plD6O1icTzKdCBItgg0qAFQGImZ/5VEeC8+gCgq27IY=
-github.com/atcheri/ride-booking-grpc-proto/golang/trip v0.2.1/go.mod h1:NuRDadw1A/hpbBeXtG5k6+GsXQIAHoxaWzqfY+PHLfI=
+github.com/atcheri/ride-booking-grpc-proto/golang/trip v0.2.2 h1:y83ksKCSYSAmm93nZYIjKxN2W2U+LfDpb7QSXjDBzyk=
+github.com/atcheri/ride-booking-grpc-proto/golang/trip v0.2.2/go.mod h1:NuRDadw1A/hpbBeXtG5k6+GsXQIAHoxaWzqfY+PHLfI=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/go-logr/logr v1.4.3 h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI=
