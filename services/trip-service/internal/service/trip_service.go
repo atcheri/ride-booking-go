@@ -96,7 +96,7 @@ func (s *TripService) EstimateRoutePrices(ctx context.Context, route *dto.OsrmAp
 	return estimatedFares
 }
 
-func (s *TripService) PersistTripFares(ctx context.Context, fares []*models.RideFareModel, userID string) ([]*models.RideFareModel, error) {
+func (s *TripService) PersistTripFares(ctx context.Context, fares []*models.RideFareModel, route *dto.OsrmApiResponse, userID string) ([]*models.RideFareModel, error) {
 	faresToPersist := make([]*models.RideFareModel, len(fares))
 
 	for i, f := range fares {
@@ -105,6 +105,7 @@ func (s *TripService) PersistTripFares(ctx context.Context, fares []*models.Ride
 			ID:                primitive.NewObjectID(),
 			TotalPriceInCents: f.TotalPriceInCents,
 			PackageSlug:       f.PackageSlug,
+			Route:             f.Route,
 		}
 
 		if err := s.tripRepository.SaveTripFare(ctx, fare); err != nil {

@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/atcheri/ride-booking-grpc-proto/golang/trip"
+	pb "github.com/atcheri/ride-booking-grpc-proto/golang/trip"
 )
 
 type OsrmApiResponse struct {
@@ -14,19 +14,19 @@ type OsrmApiResponse struct {
 	} `json:"routes"`
 }
 
-func (o *OsrmApiResponse) ToProto() *trip.Route {
+func (o *OsrmApiResponse) ToProto() *pb.Route {
 	route := o.Routes[0]
 	geometry := route.Geometry.Coordinates
-	coordinates := make([]*trip.Coordinate, len(geometry))
+	coordinates := make([]*pb.Coordinate, len(geometry))
 	for i, coord := range geometry {
-		coordinates[i] = &trip.Coordinate{
+		coordinates[i] = &pb.Coordinate{
 			Latitude:  coord[0],
 			Longitude: coord[1],
 		}
 	}
 
-	return &trip.Route{
-		Geometry: []*trip.Geometry{
+	return &pb.Route{
+		Geometry: []*pb.Geometry{
 			{
 				Coordinates: coordinates,
 			},

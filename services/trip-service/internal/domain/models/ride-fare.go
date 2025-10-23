@@ -12,4 +12,5 @@ type RideFareModel struct {
 	PackageSlug       string
 	TotalPriceInCents float64
 	ExpiresAt         time.Time
+	Route             *TripRoute
 }

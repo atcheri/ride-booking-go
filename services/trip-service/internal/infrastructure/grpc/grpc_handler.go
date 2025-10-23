@@ -31,7 +31,7 @@ func NewGRPCHandler(server *grpc.Server, service service.TripService) *gRPCHandl
 func (h *gRPCHandler) PreviewTrip(ctx context.Context, req *pb.PreviewTripRequest) (*pb.PreviewTripResponse, error) {
 	pickup := req.GetStartLocation()
 	destination := req.GetEndLocation()
-	resp, err := h.service.GetRoute(ctx,
+	route, err := h.service.GetRoute(ctx,
 		&types.Coordinate{
 			Latitude:  pickup.GetLatitude(),
 			Longitude: pickup.GetLongitude(),
@@ -45,15 +45,15 @@ func (h *gRPCHandler) PreviewTrip(ctx context.Context, req *pb.PreviewTripReques
 		return nil, status.Errorf(codes.Internal, "failed to get route: %v", err)
 	}
 
-	estimatedFares := h.service.EstimateRoutePrices(ctx, resp)
-	fares, err := h.service.PersistTripFares(ctx, estimatedFares, req.GetUserID())
+	estimatedFares := h.service.EstimateRoutePrices(ctx, route)
+	fares, err := h.service.PersistTripFares(ctx, estimatedFares, route, req.GetUserID())
 	if err != nil {
 		log.Println(err)
 		return nil, status.Errorf(codes.Internal, "failed to persis fares for route: %v", err)
 	}
 
 	return &pb.PreviewTripResponse{
-		Route:     resp.ToProto(),
+		Route:     route.ToProto(),
 		RideFares: dto.FareModelsToProto(fares),
 	}, nil
 }
