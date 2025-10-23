@@ -3,14 +3,11 @@ package grpc
 import (
 	"context"
 	"log"
-	"time"
 
-	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/models"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/service"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/dto"
 	"github.com/atcheri/ride-booking-go/shared/types"
 	pb "github.com/atcheri/ride-booking-grpc-proto/golang/trip"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -62,20 +59,21 @@ func (h *gRPCHandler) PreviewTrip(ctx context.Context, req *pb.PreviewTripReques
 }
 
 func (h *gRPCHandler) CreateTrip(ctx context.Context, req *pb.CreateTripRequest) (*pb.CreateTripResponse, error) {
-	resp, err := h.service.CreateTrip(ctx, &models.RideFareModel{
-		ID:                primitive.ObjectID{},
-		UserID:            "",
-		PackageSlug:       "",
-		TotalPriceInCents: 0,
-		ExpiresAt:         time.Time{},
-	})
-
+	fareID := req.GetRideFareID()
+	userID := req.GetUserID()
+	fare, err := h.service.GetAndValidateFare(ctx, fareID, userID)
 	if err != nil {
-		log.Println(err)
-		return nil, status.Errorf(codes.Internal, "failed to create trip: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to validate the fare: %v", err)
 	}
 
+	trip, err := h.service.CreateTrip(ctx, fare)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create the trip: %v", err)
+	}
+
+	// TODO: publish an event to the message queue
+
 	return &pb.CreateTripResponse{
-		TripID: resp.ID.Hex(),
+		TripID: trip.ID.Hex(),
 	}, nil
 }

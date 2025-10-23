@@ -11,6 +11,7 @@ import (
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/repository"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/dto"
 	"github.com/atcheri/ride-booking-go/shared/types"
+	pb "github.com/atcheri/ride-booking-grpc-proto/golang/trip"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -34,6 +35,7 @@ func (s *TripService) CreateTrip(ctx context.Context, ride *models.RideFareModel
 		UserId:   ride.UserID,
 		Status:   "pending",
 		RideFare: ride,
+		Driver:   &pb.Driver{}, // populating the struct with an empty driver on trip creation
 	}
 
 	return s.tripRepository.CreateTrip(ctx, trip)
@@ -113,6 +115,25 @@ func (s *TripService) PersistTripFares(ctx context.Context, fares []*models.Ride
 	}
 
 	return faresToPersist, nil
+}
+
+func (s *TripService) GetAndValidateFare(ctx context.Context, fareID, userID string) (*models.RideFareModel, error) {
+	fare, err := s.tripRepository.GetFareByID(ctx, fareID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get the fare for ID %s : %v", fareID, err)
+	}
+
+	// validate the fare
+	if fare == nil {
+		return nil, fmt.Errorf("fare does not exist")
+	}
+
+	// ... and the fare ownership
+	if userID != fare.UserID {
+		return nil, fmt.Errorf("fare does not belong to the user")
+	}
+
+	return fare, nil
 }
 
 func estimateRouteFare(fare *models.RideFareModel, route *dto.OsrmApiResponse) *models.RideFareModel {
