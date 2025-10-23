@@ -7,6 +7,7 @@ import (
 
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/models"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/service"
+	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/dto"
 	"github.com/atcheri/ride-booking-go/shared/types"
 	pb "github.com/atcheri/ride-booking-grpc-proto/golang/trip"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -47,9 +48,16 @@ func (h *gRPCHandler) PreviewTrip(ctx context.Context, req *pb.PreviewTripReques
 		return nil, status.Errorf(codes.Internal, "failed to get route: %v", err)
 	}
 
+	estimatedFares := h.service.EstimateRoutePrices(ctx, resp)
+	fares, err := h.service.PersistTripFares(ctx, estimatedFares, req.GetUserID())
+	if err != nil {
+		log.Println(err)
+		return nil, status.Errorf(codes.Internal, "failed to persis fares for route: %v", err)
+	}
+
 	return &pb.PreviewTripResponse{
 		Route:     resp.ToProto(),
-		RideFares: []*pb.RideFare{},
+		RideFares: dto.FareModelsToProto(fares),
 	}, nil
 }
 
