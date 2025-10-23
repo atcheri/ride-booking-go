@@ -65,3 +65,67 @@ func (s *TripService) GetRoute(ctx context.Context, pickup, destination *types.C
 
 	return &routeResp, nil
 }
+
+func (s *TripService) EstimateRoutePrices(ctx context.Context, route *dto.OsrmApiResponse) []*models.RideFareModel {
+	baseFares := []*models.RideFareModel{
+		{
+			PackageSlug:       "suv",
+			TotalPriceInCents: 200,
+		},
+		{
+			PackageSlug:       "sedan",
+			TotalPriceInCents: 350,
+		},
+		{
+			PackageSlug:       "van",
+			TotalPriceInCents: 400,
+		},
+		{
+			PackageSlug:       "luxury",
+			TotalPriceInCents: 1000,
+		},
+	}
+
+	estimatedFares := make([]*models.RideFareModel, len(baseFares))
+	for i, fare := range baseFares {
+		estimatedFares[i] = estimateRouteFare(fare, route)
+	}
+
+	return estimatedFares
+}
+
+func (s *TripService) PersistTripFares(ctx context.Context, fares []*models.RideFareModel, userID string) ([]*models.RideFareModel, error) {
+	faresToPersist := make([]*models.RideFareModel, len(fares))
+
+	for i, f := range fares {
+		fare := &models.RideFareModel{
+			UserID:            userID,
+			ID:                primitive.NewObjectID(),
+			TotalPriceInCents: f.TotalPriceInCents,
+			PackageSlug:       f.PackageSlug,
+		}
+
+		if err := s.tripRepository.SaveTripFare(ctx, fare); err != nil {
+			return nil, fmt.Errorf("failed to persis trip fare: %w", err)
+		}
+
+		faresToPersist[i] = fare
+	}
+
+	return faresToPersist, nil
+}
+
+func estimateRouteFare(fare *models.RideFareModel, route *dto.OsrmApiResponse) *models.RideFareModel {
+	pricingCfg := dto.DefaultPricingConfig()
+	carPackagePrice := fare.TotalPriceInCents
+	distanceKm := route.Routes[0].Distance
+	durationInMinutes := route.Routes[0].Duration
+	distanceFare := distanceKm * pricingCfg.PricePerUnitOfDistance
+	timeFare := durationInMinutes * pricingCfg.PricingPerUnitOftime
+	totalPrice := carPackagePrice + distanceFare + timeFare
+
+	return &models.RideFareModel{
+		TotalPriceInCents: totalPrice,
+		PackageSlug:       fare.PackageSlug,
+	}
+}
