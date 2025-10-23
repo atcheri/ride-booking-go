@@ -8,4 +8,5 @@ import (
 
 type TripRepository interface {
 	CreateTrip(ctx context.Context, trip *models.TripModel) (*models.TripModel, error)
+	SaveTripFare(ctx context.Context, fare *models.RideFareModel) error
 }

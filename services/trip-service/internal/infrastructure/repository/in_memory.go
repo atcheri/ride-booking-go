@@ -23,3 +23,9 @@ func (r *inMemoryRepository) CreateTrip(ctx context.Context, trip *models.TripMo
 
 	return trip, nil
 }
+
+func (r *inMemoryRepository) SaveTripFare(ctx context.Context, fare *models.RideFareModel) error {
+	r.rideFares[fare.ID.Hex()] = fare
+
+	return nil
+}
