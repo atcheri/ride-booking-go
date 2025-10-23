@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/models"
 )
@@ -28,4 +29,13 @@ func (r *inMemoryRepository) SaveTripFare(ctx context.Context, fare *models.Ride
 	r.rideFares[fare.ID.Hex()] = fare
 
 	return nil
+}
+
+func (r *inMemoryRepository) GetFareByID(ctx context.Context, fareID string) (*models.RideFareModel, error) {
+	fare, ok := r.rideFares[fareID]
+	if !ok {
+		return nil, fmt.Errorf("fare with id %s not found in the in-memory DB", fareID)
+	}
+
+	return fare, nil
 }
