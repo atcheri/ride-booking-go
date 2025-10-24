@@ -11,5 +11,5 @@ type TripModel struct {
 	UserId   string
 	Status   string
 	RideFare *RideFareModel
-	Driver   *pb.Driver
+	Driver   *pb.TripDriver
 }

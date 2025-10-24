@@ -35,7 +35,7 @@ func (s *TripService) CreateTrip(ctx context.Context, ride *models.RideFareModel
 		UserId:   ride.UserID,
 		Status:   "pending",
 		RideFare: ride,
-		Driver:   &pb.Driver{}, // populating the struct with an empty driver on trip creation
+		Driver:   &pb.TripDriver{}, // populating the struct with an empty driver on trip creation
 	}
 
 	return s.tripRepository.CreateTrip(ctx, trip)
