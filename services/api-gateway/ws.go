@@ -2,12 +2,14 @@ package main
 
 import (
 	"log"
-	"math/rand"
 	"net/http"
 
+	grpcclient "github.com/atcheri/ride-booking-go/services/api-gateway/grpc_client"
 	"github.com/atcheri/ride-booking-go/shared/contracts"
-	"github.com/atcheri/ride-booking-go/shared/util"
+	"github.com/atcheri/ride-booking-go/shared/env"
 	"github.com/gorilla/websocket"
+
+	pb "github.com/atcheri/ride-booking-grpc-proto/golang/driver"
 )
 
 var (
@@ -16,6 +18,7 @@ var (
 			return true
 		},
 	}
+	driverServiceURL = env.GetString("DRIVER_SERVICE_URL", "driver-service:9092")
 )
 
 func handleDriversWebSocket(w http.ResponseWriter, r *http.Request) {
@@ -41,23 +44,33 @@ func handleDriversWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type Driver struct {
-		Id             string `json:"id"`
-		Name           string `json:"name"`
-		ProfilePicture string `json:"profilePicture"`
-		CarPlate       string `json:"carPlate"`
-		PackageSlug    string `json:"packageSlug"`
+	// create a new grpc client
+	driverService, err := grpcclient.NewDriverServiceClient(driverServiceURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// closing the grpc connection after unregistering the driver when the ws connection is closed
+	defer func() {
+		driverService.Client.UnregisterDriver(r.Context(), &pb.RegisterDriverRequest{
+			DriverID:    userID,
+			PackageSlug: packageSlug,
+		})
+		driverService.Close()
+		log.Println("driver unregistered: ", userID)
+	}()
+
+	driverData, err := driverService.Client.RegisterDriver(r.Context(), &pb.RegisterDriverRequest{
+		DriverID:    userID,
+		PackageSlug: packageSlug,
+	})
+	if err != nil {
+		log.Printf("error registering the driver: %v", err)
 	}
 
 	msg := contracts.WSMessage{
 		Type: "driver.cmd.register",
-		Data: Driver{
-			Id:             userID,
-			Name:           "Atch",
-			ProfilePicture: util.GetRandomAvatar(rand.Intn(9) + 1),
-			CarPlate:       "ENDO16",
-			PackageSlug:    packageSlug,
-		},
+		Data: driverData.Driver,
 	}
 
 	if err := conn.WriteJSON(msg); err != nil {

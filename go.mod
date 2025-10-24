@@ -10,7 +10,11 @@ require (
 	google.golang.org/grpc v1.76.0
 )
 
+require github.com/corpix/uarand v0.0.0-20170723150923-031be390f409 // indirect
+
 require (
+	github.com/icrowley/fake v0.0.0-20240710202011-f797eb4a99c0
+	github.com/mmcloughlin/geohash v0.10.0
 	golang.org/x/net v0.46.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/text v0.30.0 // indirect

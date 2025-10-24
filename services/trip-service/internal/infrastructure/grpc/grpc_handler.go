@@ -18,14 +18,12 @@ type gRPCHandler struct {
 	service service.TripService
 }
 
-func NewGRPCHandler(server *grpc.Server, service service.TripService) *gRPCHandler {
+func NewGRPCHandler(server *grpc.Server, service service.TripService) {
 	handler := &gRPCHandler{
 		service: service,
 	}
 
 	pb.RegisterTripServiceServer(server, handler)
-
-	return handler
 }
 
 func (h *gRPCHandler) PreviewTrip(ctx context.Context, req *pb.PreviewTripRequest) (*pb.PreviewTripResponse, error) {
