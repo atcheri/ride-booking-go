@@ -1,5 +1,7 @@
-github.com/atcheri/ride-booking-grpc-proto/golang/trip v0.4.0 h1:PCk8rrizVMIlZDrdKESz2OBg0WHCE4vGBeDqWcuImD4=
-github.com/atcheri/ride-booking-grpc-proto/golang/trip v0.4.0/go.mod h1:NuRDadw1A/hpbBeXtG5k6+GsXQIAHoxaWzqfY+PHLfI=
+github.com/atcheri/ride-booking-grpc-proto/golang/driver v0.0.0-20251024114120-a261eccd92b3 h1:dwiBmhOzsL0MxKUSmXooyROsQzBoMI9QGYOArF7KQAc=
+github.com/atcheri/ride-booking-grpc-proto/golang/driver v0.0.0-20251024114120-a261eccd92b3/go.mod h1:hA2ye2CME53qjXjubjWx0uz53JPJxLdsh/ojY0XTBrw=
+github.com/atcheri/ride-booking-grpc-proto/golang/trip v0.4.1 h1:DDe/q8u4rVOnvA5SGsBS790pa1VMQlF5mAOoFbhi68s=
+github.com/atcheri/ride-booking-grpc-proto/golang/trip v0.4.1/go.mod h1:NuRDadw1A/hpbBeXtG5k6+GsXQIAHoxaWzqfY+PHLfI=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/go-logr/logr v1.4.3 h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI=
