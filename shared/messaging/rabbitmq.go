@@ -81,6 +81,15 @@ func (r *RabbitMQ) Publish(ctx context.Context, exchangeName, queueName, message
 type MessageHandler func(context.Context, amqp.Delivery) error
 
 func (r *RabbitMQ) Consume(queueName string, handler MessageHandler) error {
+	err := r.Channel.Qos(
+		1,     // prefetchCount: Limit to 1 unacknowledged message per consumer; set to 1 for a fair dispatch
+		0,     // prefetchSize: no specific limit on message size
+		false, // global: apply prefetchCount to each consumer individually
+	)
+	if err != nil {
+		return fmt.Errorf("failed to set QoS: %v", err)
+	}
+
 	msgs, err := r.Channel.Consume(
 		queueName, // queue
 		"",        // consumer
