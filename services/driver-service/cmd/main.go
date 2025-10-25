@@ -46,6 +46,8 @@ func main() {
 	}
 	defer rabbitMQ.Close()
 
+	log.Println("connected to RabbitMQ")
+
 	grpcServer := grpcserver.NewServer( /*OPTIONS*/ )
 	grpc.NewGrpcHandler(grpcServer, driverService)
 
