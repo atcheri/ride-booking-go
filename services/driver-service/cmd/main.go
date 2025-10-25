@@ -11,11 +11,13 @@ import (
 	"github.com/atcheri/ride-booking-go/services/driver-service/internal/infrastructure/grpc"
 	"github.com/atcheri/ride-booking-go/services/driver-service/internal/service"
 	"github.com/atcheri/ride-booking-go/shared/env"
+	amqp "github.com/rabbitmq/amqp091-go"
 	grpcserver "google.golang.org/grpc"
 )
 
 var (
-	GrpcAddr = env.GetString("HTTP_ADDR", ":9092")
+	gRPCAddr    = env.GetString("HTTP_ADDR", ":9092")
+	rabbitmqURI = env.GetString("RABBITMQ_DEFAULT_URI", "amqp://guest:guest@rabbitmq:56723/")
 )
 
 func main() {
@@ -30,12 +32,19 @@ func main() {
 		cancel()
 	}()
 
-	log.Printf("Starting the driver-service grpc server on port: %s", GrpcAddr)
+	log.Printf("Starting the driver-service grpc server on port: %s", gRPCAddr)
 
-	lis, err := net.Listen("tcp", GrpcAddr)
+	lis, err := net.Listen("tcp", gRPCAddr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+
+	// RAbbitMQ connection
+	conn, err := amqp.Dial(rabbitmqURI)
+	if err != nil {
+		log.Fatalf("failed to connect to rabbitmq")
+	}
+	defer conn.Close()
 
 	grpcServer := grpcserver.NewServer( /*OPTIONS*/ )
 	grpc.NewGrpcHandler(grpcServer, driverService)
