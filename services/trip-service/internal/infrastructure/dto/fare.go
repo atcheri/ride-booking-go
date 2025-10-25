@@ -1,14 +1,11 @@
 package dto
 
 import (
-	"log"
-
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/models"
 	pb "github.com/atcheri/ride-booking-grpc-proto/golang/trip"
 )
 
 func FareModelToProto(fare *models.RideFareModel) *pb.RideFare {
-	log.Printf("fare model: %v", fare)
 	return &pb.RideFare{
 		Id:                fare.ID.Hex(),
 		UserID:            fare.UserID,

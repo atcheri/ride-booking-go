@@ -6,6 +6,7 @@ import (
 
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/service"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/dto"
+	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/events"
 	"github.com/atcheri/ride-booking-go/shared/types"
 	pb "github.com/atcheri/ride-booking-grpc-proto/golang/trip"
 	"google.golang.org/grpc"
@@ -15,12 +16,14 @@ import (
 
 type gRPCHandler struct {
 	pb.UnimplementedTripServiceServer
-	service service.TripService
+	service   service.TripService
+	publisher *events.TripEventPubliser
 }
 
-func NewGRPCHandler(server *grpc.Server, service service.TripService) {
+func NewGRPCHandler(server *grpc.Server, service service.TripService, publiser *events.TripEventPubliser) {
 	handler := &gRPCHandler{
-		service: service,
+		service:   service,
+		publisher: publiser,
 	}
 
 	pb.RegisterTripServiceServer(server, handler)
@@ -69,7 +72,10 @@ func (h *gRPCHandler) CreateTrip(ctx context.Context, req *pb.CreateTripRequest)
 		return nil, status.Errorf(codes.Internal, "failed to create the trip: %v", err)
 	}
 
-	// TODO: publish an event to the message queue
+	err = h.publisher.PublishTripCreated(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to publish the trip-create event: %v", err)
+	}
 
 	return &pb.CreateTripResponse{
 		TripID: trip.ID.Hex(),

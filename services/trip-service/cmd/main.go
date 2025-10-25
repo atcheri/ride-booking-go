@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/events"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/grpc"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/repository"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/service"
@@ -50,9 +51,13 @@ func main() {
 	}
 	defer rabbitMQ.Close()
 
+	log.Println("connected to RabbitMQ")
+
+	publisher := events.NewTripEventPublisher(rabbitMQ)
+
 	// starting the gRPc server
 	grpcServer := grpcserver.NewServer( /*OPTIONS*/ )
-	grpc.NewGRPCHandler(grpcServer, tripService)
+	grpc.NewGRPCHandler(grpcServer, tripService, publisher)
 
 	log.Printf("starting gRPC trip-service on port: %s", lis.Addr().String())
 
