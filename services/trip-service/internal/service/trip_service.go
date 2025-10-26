@@ -142,7 +142,7 @@ func (s *TripService) GetTripByID(ctx context.Context, id string) (*models.TripM
 	return s.tripRepository.GetTripByID(ctx, id)
 }
 
-func (s *TripService) Updatetrip(ctx context.Context, id string, status string, driver *pbd.Driver) error {
+func (s *TripService) UpdateTrip(ctx context.Context, id string, status string, driver *pbd.Driver) error {
 	return s.tripRepository.UpdateTrip(ctx, id, status, driver)
 }
 
