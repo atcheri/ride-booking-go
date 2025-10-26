@@ -7,24 +7,18 @@ import (
 	grpcclient "github.com/atcheri/ride-booking-go/services/api-gateway/grpc_client"
 	"github.com/atcheri/ride-booking-go/shared/contracts"
 	"github.com/atcheri/ride-booking-go/shared/env"
-	"github.com/gorilla/websocket"
+	"github.com/atcheri/ride-booking-go/shared/messaging"
 
 	pb "github.com/atcheri/ride-booking-grpc-proto/golang/driver"
 )
 
 var (
-	upgrader = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
 	driverServiceURL = env.GetString("DRIVER_SERVICE_URL", "driver-service:9092")
+	connManager      = messaging.NewConnectionManager()
 )
 
 func handleDriversWebSocket(w http.ResponseWriter, r *http.Request) {
-	log.Println("reaching at least here")
-	conn, err := upgrader.Upgrade(w, r, nil)
-
+	conn, err := connManager.Upgrade(w, r)
 	if err != nil {
 		log.Printf("drivers websocket upgrade failed: %v", err)
 		return
@@ -44,6 +38,9 @@ func handleDriversWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Add connection to the manager
+	connManager.Add(userID, conn)
+
 	// create a new grpc client
 	driverService, err := grpcclient.NewDriverServiceClient(driverServiceURL)
 	if err != nil {
@@ -52,6 +49,7 @@ func handleDriversWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	// closing the grpc connection after unregistering the driver when the ws connection is closed
 	defer func() {
+		connManager.Remove(userID)
 		driverService.Client.UnregisterDriver(r.Context(), &pb.RegisterDriverRequest{
 			DriverID:    userID,
 			PackageSlug: packageSlug,
@@ -68,12 +66,10 @@ func handleDriversWebSocket(w http.ResponseWriter, r *http.Request) {
 		log.Printf("error registering the driver: %v", err)
 	}
 
-	msg := contracts.WSMessage{
-		Type: "driver.cmd.register",
+	if err := connManager.SendMessage(userID, contracts.WSMessage{
+		Type: contracts.DriverCmdRegister,
 		Data: driverData.Driver,
-	}
-
-	if err := conn.WriteJSON(msg); err != nil {
+	}); err != nil {
 		log.Printf("error sending message to the driver: %v", err)
 		return
 	}
@@ -91,7 +87,7 @@ func handleDriversWebSocket(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleRidersWebSocket(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := connManager.Upgrade(w, r)
 
 	log.Println("ws connection established")
 
@@ -107,6 +103,10 @@ func handleRidersWebSocket(w http.ResponseWriter, r *http.Request) {
 		log.Println("no user ID was provided")
 		return
 	}
+
+	// Add connection to the manager
+	connManager.Add(userID, conn)
+	defer connManager.Remove(userID)
 
 	for {
 		_, message, err := conn.ReadMessage()
