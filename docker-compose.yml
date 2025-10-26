@@ -1,0 +1,125 @@
+version: '3.8'
+
+services:
+  # Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: ride-booking-rabbitmq
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 15s
+      retries: 5
+      start_period: 20s
+    networks:
+      - ride-booking-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: infra/development/docker/api-gateway.Dockerfile
+    container_name: ride-booking-api-gateway
+    ports:
+      - "8081:8081"
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      GATEWAY_HTTP_ADDR: ":8081"
+      RABBITMQ_DEFAULT_URI: amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672/
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - ride-booking-network
+    restart: unless-stopped
+
+  # Trip Service
+  trip-service:
+    build:
+      context: .
+      dockerfile: infra/development/docker/trip-service.Dockerfile
+    container_name: ride-booking-trip-service
+    ports:
+      - "9093:9093"
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      RABBITMQ_DEFAULT_URI: amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672/
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - ride-booking-network
+    restart: unless-stopped
+
+  # Driver Service
+  driver-service:
+    build:
+      context: .
+      dockerfile: infra/development/docker/driver-service.Dockerfile
+    container_name: ride-booking-driver-service
+    ports:
+      - "9092:9092"
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      RABBITMQ_DEFAULT_URI: amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672/
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - ride-booking-network
+    restart: unless-stopped
+
+  # Payment Service
+  payment-service:
+    build:
+      context: .
+      dockerfile: infra/development/docker/payment-service.Dockerfile
+    container_name: ride-booking-payment-service
+    ports:
+      - "9004:9004"
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      RABBITMQ_DEFAULT_URI: amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672/
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-http://localhost:3000?payment=success}
+      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-http://localhost:3000?payment=cancel}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - ride-booking-network
+    restart: unless-stopped
+
+  # Web Frontend
+  web:
+    build:
+      context: .
+      dockerfile: infra/development/docker/web.Dockerfile
+    container_name: ride-booking-web
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8081}
+      NEXT_PUBLIC_WEBSOCKET_URL: ${NEXT_PUBLIC_WEBSOCKET_URL:-ws://localhost:8081/ws}
+    depends_on:
+      - api-gateway
+    networks:
+      - ride-booking-network
+    restart: unless-stopped
+
+volumes:
+  rabbitmq_data:
+    driver: local
+
+networks:
+  ride-booking-network:
+    driver: bridge
