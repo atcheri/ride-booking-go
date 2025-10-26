@@ -19,7 +19,7 @@ This guide explains how to run the Ride Booking application using Docker Compose
 2. **Create environment file**
 
    ```bash
-   cp .env.example .env
+   cp .env.docker-compose.example .env
    ```
 
 3. **Start all services**
