@@ -59,6 +59,18 @@ func (s *DriverService) UnregisterDriver(driverId string) {
 	}
 }
 
+func (s *DriverService) FindAvailableDrivers(packageSlug string) []string {
+	matchingDrivers := make([]string, 0)
+
+	for _, driver := range s.drivers {
+		if driver.Driver.PackageSlug == packageSlug {
+			matchingDrivers = append(matchingDrivers, driver.Driver.Id)
+		}
+	}
+
+	return matchingDrivers
+}
+
 func (s *DriverService) generateFakeDriver(id string, i int, slug string, geohash string, location *pb.Location) *pb.Driver {
 	return &pb.Driver{
 		Id:             id,

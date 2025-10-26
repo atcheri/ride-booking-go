@@ -7,4 +7,5 @@ import (
 type DriverService interface {
 	RegisterDriver(driverId string, packageSlug string) (*pb.Driver, error)
 	UnregisterDriver(driverId string)
+	FindAvailableDrivers(packageSlug string) []string
 }
