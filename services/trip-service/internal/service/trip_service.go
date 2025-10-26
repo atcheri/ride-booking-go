@@ -11,6 +11,7 @@ import (
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/repository"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/dto"
 	"github.com/atcheri/ride-booking-go/shared/types"
+	pbd "github.com/atcheri/ride-booking-grpc-proto/golang/driver"
 	pb "github.com/atcheri/ride-booking-grpc-proto/golang/trip"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -135,6 +136,14 @@ func (s *TripService) GetAndValidateFare(ctx context.Context, fareID, userID str
 	}
 
 	return fare, nil
+}
+
+func (s *TripService) GetTripByID(ctx context.Context, id string) (*models.TripModel, error) {
+	return s.tripRepository.GetTripByID(ctx, id)
+}
+
+func (s *TripService) Updatetrip(ctx context.Context, id string, status string, driver *pbd.Driver) error {
+	return s.tripRepository.UpdateTrip(ctx, id, status, driver)
 }
 
 func estimateRouteFare(fare *models.RideFareModel, route *dto.OsrmApiResponse) *models.RideFareModel {
