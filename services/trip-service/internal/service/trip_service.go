@@ -32,7 +32,7 @@ func NewTripService(repo repository.TripRepository) *TripService {
 func (s *TripService) CreateTrip(ctx context.Context, ride *models.RideFareModel) (*models.TripModel, error) {
 	trip := &models.TripModel{
 		ID:       primitive.NewObjectID(),
-		UserId:   ride.UserID,
+		UserID:   ride.UserID,
 		Status:   "pending",
 		RideFare: ride,
 		Driver:   &pb.TripDriver{}, // populating the struct with an empty driver on trip creation

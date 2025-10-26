@@ -2,7 +2,10 @@ package events
 
 import (
 	"context"
+	"encoding/json"
+	"log"
 
+	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/models"
 	"github.com/atcheri/ride-booking-go/shared/contracts"
 	"github.com/atcheri/ride-booking-go/shared/messaging"
 )
@@ -17,9 +20,19 @@ func NewTripEventPublisher(rabbitmq *messaging.RabbitMQ) *TripEventPubliser {
 	}
 }
 
-func (p *TripEventPubliser) PublishTripCreated(ctx context.Context) error {
+func (p *TripEventPubliser) PublishTripCreated(ctx context.Context, trip *models.TripModel) error {
 	routingKey := contracts.TripEventCreated
-	body := "Trip has been created"
+	log.Printf("publish created trip: %+v", trip)
+	payload := messaging.TripEventData{
+		Trip: trip.ToProto(),
+	}
+	tripEventJSON, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
 
-	return p.rabbitmq.Publish(ctx, routingKey, body)
+	return p.rabbitmq.Publish(ctx, routingKey, contracts.AmqpMessage{
+		OwnerID: trip.UserID,
+		Data:    tripEventJSON,
+	})
 }
