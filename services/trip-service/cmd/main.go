@@ -51,7 +51,7 @@ func main() {
 	}
 	defer rabbitMQ.Close()
 
-	log.Println("connected to RabbitMQ")
+	log.Println("trip-service connected to RabbitMQ")
 
 	publisher := events.NewTripEventPublisher(rabbitMQ)
 

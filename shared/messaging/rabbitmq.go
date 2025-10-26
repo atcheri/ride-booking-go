@@ -67,10 +67,24 @@ func (r *RabbitMQ) setupExchangesAndQueues() error {
 		return fmt.Errorf("failed to declaare the topic: %v", err)
 	}
 
-	if err := r.declareAndBindQueue(FindAvailableDriversQueue, []string{
-		contracts.TripEventCreated,
-		contracts.TripEventDriverNotInterested,
-	}, TripExchange); err != nil {
+	if err := r.declareAndBindQueue(
+		FindAvailableDriversQueue,
+		[]string{
+			contracts.TripEventCreated,
+			contracts.TripEventDriverNotInterested,
+		},
+		TripExchange,
+	); err != nil {
+		return err
+	}
+
+	if err := r.declareAndBindQueue(
+		DriverCmdTripRequestQueue,
+		[]string{
+			contracts.DriverCmdTripRequest,
+		},
+		TripExchange,
+	); err != nil {
 		return err
 	}
 

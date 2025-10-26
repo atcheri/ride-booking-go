@@ -46,7 +46,7 @@ func main() {
 	}
 	defer rabbitMQ.Close()
 
-	log.Println("connected to RabbitMQ")
+	log.Println("drver-service connected to RabbitMQ")
 
 	consumer := service.NewTripConsumerService(rabbitMQ, driverService)
 	go func() {
