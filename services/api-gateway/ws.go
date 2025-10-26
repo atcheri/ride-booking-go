@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -95,7 +96,33 @@ func handleDriversWebSocketWithRabbitMQ(rb *messaging.RabbitMQ) func(w http.Resp
 				break
 			}
 
-			log.Printf("received message from drivers websocket: %s", message)
+			type driverMessage struct {
+				Type string          `json:"type"`
+				Data json.RawMessage `json:"data"`
+			}
+			var driverMsg driverMessage
+			if err := json.Unmarshal(message, &driverMsg); err != nil {
+				log.Printf("error unmarshalling driver message: %v", err)
+				continue
+			}
+
+			// handle the different message by type
+			switch driverMsg.Type {
+			case contracts.DriverCmdLocation:
+				// handle driver location update
+				continue
+			case contracts.DriverCmdTripAccept, contracts.DriverCmdTripDecline:
+				// forward the message to RabbitMQ
+				if err := rb.Publish(r.Context(), driverMsg.Type, contracts.AmqpMessage{
+					OwnerID: userID,
+					Data:    driverMsg.Data,
+				}); err != nil {
+					log.Printf("error publishing the message to RabbitMQ: %v", err)
+				}
+			default:
+				log.Printf("unknown message type: %s", driverMsg.Type)
+			}
+
 		}
 	}
 }
