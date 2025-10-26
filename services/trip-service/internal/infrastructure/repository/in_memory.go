@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/domain/models"
+	pbd "github.com/atcheri/ride-booking-grpc-proto/golang/driver"
+	pb "github.com/atcheri/ride-booking-grpc-proto/golang/trip"
 )
 
 type inMemoryRepository struct {
@@ -38,4 +40,31 @@ func (r *inMemoryRepository) GetFareByID(ctx context.Context, fareID string) (*m
 	}
 
 	return fare, nil
+}
+
+func (r *inMemoryRepository) GetTripByID(ctx context.Context, id string) (*models.TripModel, error) {
+	trip, ok := r.trips[id]
+	if !ok {
+		return nil, nil
+	}
+	return trip, nil
+}
+
+func (r *inMemoryRepository) UpdateTrip(ctx context.Context, tripID string, status string, driver *pbd.Driver) error {
+	trip, ok := r.trips[tripID]
+	if !ok {
+		return fmt.Errorf("trip not found with ID: %s", tripID)
+	}
+
+	trip.Status = status
+
+	if driver != nil {
+		trip.Driver = &pb.TripDriver{
+			Id:             driver.Id,
+			Name:           driver.Name,
+			CarPlate:       driver.CarPlate,
+			ProfilePicture: driver.ProfilePicture,
+		}
+	}
+	return nil
 }
