@@ -27,7 +27,7 @@ func NewDriverConsumer(rabbitmq *messaging.RabbitMQ, service service.TripService
 }
 
 func (c *DriverConsumer) Listen() error {
-	return c.rabbitmq.Consume(messaging.FindAvailableDriversQueue, func(ctx context.Context, msg amqp.Delivery) error {
+	return c.rabbitmq.Consume(messaging.DriverTripResponseQueue, func(ctx context.Context, msg amqp.Delivery) error {
 		var message contracts.AmqpMessage
 		if err := json.Unmarshal(msg.Body, &message); err != nil {
 			log.Printf("failed to unmarshal the message: %v", err)
