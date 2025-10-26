@@ -150,6 +150,19 @@ func handleRidersWebSocketWithRabbitMQ(rb *messaging.RabbitMQ) func(w http.Respo
 		connManager.Add(userID, conn)
 		defer connManager.Remove(userID)
 
+		// initialize the queue consumers
+		queues := []string{
+			messaging.NotifyRiderNoDriversFoundQueue,
+		}
+
+		for _, q := range queues {
+			consumer := messaging.NewQueueConsumer(rb, connManager, q)
+
+			if err := consumer.Start(); err != nil {
+				log.Printf("failed to start consumer for the queue: %s; err: %v", q, err)
+			}
+		}
+
 		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {
