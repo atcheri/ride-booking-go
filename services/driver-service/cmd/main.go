@@ -48,7 +48,7 @@ func main() {
 
 	log.Println("connected to RabbitMQ")
 
-	consumer := service.NewTripConsumerService(rabbitMQ)
+	consumer := service.NewTripConsumerService(rabbitMQ, driverService)
 	go func() {
 		if err := consumer.Listen(); err != nil {
 			log.Fatalf("failed to listen to rabbitmq: %v", err)

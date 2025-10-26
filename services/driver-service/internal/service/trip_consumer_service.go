@@ -7,17 +7,20 @@ import (
 
 	amqp "github.com/rabbitmq/amqp091-go"
 
+	"github.com/atcheri/ride-booking-go/services/driver-service/domain/service"
 	"github.com/atcheri/ride-booking-go/shared/contracts"
 	"github.com/atcheri/ride-booking-go/shared/messaging"
 )
 
 type TripConsumerService struct {
 	rabbitmq *messaging.RabbitMQ
+	service  service.DriverService
 }
 
-func NewTripConsumerService(rabbitmq *messaging.RabbitMQ) *TripConsumerService {
+func NewTripConsumerService(rabbitmq *messaging.RabbitMQ, service service.DriverService) *TripConsumerService {
 	return &TripConsumerService{
 		rabbitmq: rabbitmq,
+		service:  service,
 	}
 }
 
@@ -36,6 +39,49 @@ func (c *TripConsumerService) Listen() error {
 		}
 
 		log.Printf("driver received a message: %v", payload)
+
+		switch msg.RoutingKey {
+		case contracts.TripEventCreated, contracts.TripEventDriverNotInterested:
+			return c.handleFindAndNotifyDrivers(ctx, payload)
+		}
+
+		log.Printf("unknown trip event: %+v", payload)
+
 		return nil
 	})
+}
+
+func (c *TripConsumerService) handleFindAndNotifyDrivers(ctx context.Context, payload messaging.TripEventData) error {
+	suitableDriverIDs := c.service.FindAvailableDrivers(payload.Trip.SelectedFare.PackageSlug)
+
+	log.Printf("found %d suitable drivers", len(suitableDriverIDs))
+
+	if len(suitableDriverIDs) == 0 {
+		// notify the rider that no drivers are available
+		if err := c.rabbitmq.Publish(ctx, contracts.TripEventNoDriversFound, contracts.AmqpMessage{
+			OwnerID: payload.Trip.UserID,
+		}); err != nil {
+			log.Printf("failed to publish the message to the exchange: %v", err)
+			return err
+		}
+
+		return nil
+	}
+
+	firstSuitableDriver := suitableDriverIDs[0]
+	marchalledEvent, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	// notify the driver about a trip request
+	if err := c.rabbitmq.Publish(ctx, contracts.DriverCmdTripRequest, contracts.AmqpMessage{
+		OwnerID: firstSuitableDriver,
+		Data:    marchalledEvent,
+	}); err != nil {
+		log.Printf("failed to publish the message to the exchange: %v", err)
+		return err
+	}
+
+	return nil
 }
