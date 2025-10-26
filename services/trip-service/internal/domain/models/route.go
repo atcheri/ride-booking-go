@@ -13,10 +13,6 @@ type TripRoute struct {
 }
 
 func (r *TripRoute) ToProto() *pb.Route {
-	if r == nil {
-		return nil
-	}
-
 	geometry := r.Geometry.Coordinates
 	coordinates := make([]*pb.Coordinate, len(geometry))
 	for i, coord := range geometry {

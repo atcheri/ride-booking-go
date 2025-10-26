@@ -105,7 +105,7 @@ func (s *TripService) PersistTripFares(ctx context.Context, fares []*models.Ride
 			ID:                primitive.NewObjectID(),
 			TotalPriceInCents: f.TotalPriceInCents,
 			PackageSlug:       f.PackageSlug,
-			Route:             f.Route,
+			Route:             route.ToDomain(),
 		}
 
 		if err := s.tripRepository.SaveTripFare(ctx, fare); err != nil {
