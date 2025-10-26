@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"math/rand/v2"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 
@@ -68,7 +69,9 @@ func (c *TripConsumerService) handleFindAndNotifyDrivers(ctx context.Context, pa
 		return nil
 	}
 
-	firstSuitableDriver := suitableDriverIDs[0]
+	// get a random index from the matching drivers
+	randomIndex := rand.IntN(len(suitableDriverIDs))
+	firstSuitableDriver := suitableDriverIDs[randomIndex]
 	marchalledEvent, err := json.Marshal(payload)
 	if err != nil {
 		return err
