@@ -7,6 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/atcheri/ride-booking-go/services/payment-service/internal/infrastructure/payment"
+	"github.com/atcheri/ride-booking-go/services/payment-service/internal/service"
 	"github.com/atcheri/ride-booking-go/services/payment-service/pkg/types"
 	"github.com/atcheri/ride-booking-go/shared/env"
 	"github.com/atcheri/ride-booking-go/shared/messaging"
@@ -43,6 +45,10 @@ func main() {
 		log.Fatalf("STRIPE_SECRET_KEY is not set")
 		return
 	}
+
+	paymentProcessor := payment.NewStripeClient(stripeCfg)
+	paymentService := service.NewPaymentService(paymentProcessor)
+	log.Println(paymentService)
 
 	// RabbitMQ connection
 	rabbitmq, err := messaging.NewRabbitMQ(rabbitmqURI)
