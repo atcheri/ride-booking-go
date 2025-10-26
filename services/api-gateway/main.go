@@ -10,14 +10,25 @@ import (
 	"time"
 
 	"github.com/atcheri/ride-booking-go/shared/env"
+	"github.com/atcheri/ride-booking-go/shared/messaging"
 )
 
 var (
-	httpAddr = env.GetString("HTTP_ADDR", ":8081")
+	httpAddr    = env.GetString("HTTP_ADDR", ":8081")
+	rabbitmqURI = env.GetString("RABBITMQ_DEFAULT_URI", "amqp://guest:guest@rabbitmq:56723/")
 )
 
 func main() {
 	log.Printf("Starting API Gateway on port: %s", httpAddr)
+
+	// RabbitMQ connection
+	rabbitMQ, err := messaging.NewRabbitMQ(rabbitmqURI)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rabbitMQ.Close()
+
+	log.Println("api-gateway connected to RabbitMQ")
 
 	mux := http.NewServeMux()
 
@@ -28,8 +39,8 @@ func main() {
 
 	mux.HandleFunc("POST /trip/preview", enableCors(handleTripPreview))
 	mux.HandleFunc("POST /trip/start", enableCors(handleStartTrip))
-	mux.HandleFunc("/ws/drivers", handleDriversWebSocket)
-	mux.HandleFunc("/ws/riders", handleRidersWebSocket)
+	mux.HandleFunc("/ws/drivers", handleDriversWebSocketWithRabbitMQ(rabbitMQ))
+	mux.HandleFunc("/ws/riders", handleRidersWebSocketWithRabbitMQ(rabbitMQ))
 
 	server := &http.Server{
 		Addr:    httpAddr,
