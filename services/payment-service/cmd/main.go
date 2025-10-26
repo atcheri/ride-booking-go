@@ -13,8 +13,11 @@ import (
 )
 
 var (
-	rabbitmqURI = env.GetString("RABBITMQ_DEFAULT_URI", "amqp://guest:guest@rabbitmq:56723/")
-	appURL      = env.GetString("APP_URL", "http://localhost:3000")
+	rabbitmqURI     = env.GetString("RABBITMQ_DEFAULT_URI", "amqp://guest:guest@rabbitmq:56723/")
+	appURL          = env.GetString("APP_URL", "http://localhost:3000")
+	stripeSecretKey = env.GetString("STRIPE_SECRET_KEY", "")
+	successURL      = env.GetString("STRIPE_SUCCESS_URL", appURL+"?payment=success")
+	cancelURL       = env.GetString("STRIPE_CANCEL_URL", appURL+"?payment=cancel")
 )
 
 func main() {
@@ -31,9 +34,9 @@ func main() {
 
 	// Stripe config
 	stripeCfg := &types.PaymentConfig{
-		StripeSecretKey: env.GetString("STRIPE_SECRET_KEY", ""),
-		SuccessURL:      env.GetString("STRIPE_SUCCESS_URL", appURL+"?payment=success"),
-		CancelURL:       env.GetString("STRIPE_CANCEL_URL", appURL+"?payment=cancel"),
+		StripeSecretKey: stripeSecretKey,
+		SuccessURL:      successURL,
+		CancelURL:       cancelURL,
 	}
 
 	if stripeCfg.StripeSecretKey == "" {
