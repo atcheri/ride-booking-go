@@ -1,6 +1,7 @@
 package messaging
 
 import (
+	pbd "github.com/atcheri/ride-booking-grpc-proto/golang/driver"
 	pb "github.com/atcheri/ride-booking-grpc-proto/golang/trip"
 )
 
@@ -13,4 +14,10 @@ const (
 
 type TripEventData struct {
 	Trip *pb.Trip `json:"trip"`
+}
+
+type DriverTripResponseData struct {
+	Driver  *pbd.Driver `json:"driver"`
+	TripID  string      `json:"tripID"`
+	RiderID string      `json:"riderID"`
 }
