@@ -5,7 +5,12 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/atcheri/ride-booking-go/shared/contracts"
 	amqp "github.com/rabbitmq/amqp091-go"
+)
+
+var (
+	TripExchange = "trip"
 )
 
 type RabbitMQ struct {
@@ -48,34 +53,69 @@ func (r *RabbitMQ) Close() {
 }
 
 func (r *RabbitMQ) setupExchangesAndQueues() error {
-	_, err := r.Channel.QueueDeclare(
-		"hello", // name
-		true,    // durable
-		false,   // delete when unused
-		false,   // exclusive
-		false,   // no-wait
-		nil,     // arguments
+	err := r.Channel.ExchangeDeclare(
+		TripExchange, // name
+		"topic",      // type
+		true,         // durable
+		false,        // auto-deleted
+		false,        // internal
+		false,        // no-wait
+		nil,          // arguments
 	)
-
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to declaare the topic: %v", err)
+	}
+
+	if err := r.declareAndBindQueue(FindAvailableDriversQueue, []string{
+		contracts.TripEventCreated,
+		contracts.TripEventDriverNotInterested,
+	}, TripExchange); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (r *RabbitMQ) Publish(ctx context.Context, exchangeName, queueName, message string) error {
+func (r *RabbitMQ) Publish(ctx context.Context, routingKey, message string) error {
 	return r.Channel.PublishWithContext(ctx,
-		exchangeName,
-		queueName,
-		false,
-		false,
+		TripExchange, // exchange
+		routingKey,   // routing key
+		false,        // mandatory
+		false,        // immediate
 		amqp.Publishing{
 			ContentType:  "text/plain",
 			Body:         []byte(message),
 			DeliveryMode: amqp.Persistent,
 		})
+}
+
+func (r *RabbitMQ) declareAndBindQueue(queueName string, messageTypes []string, exchange string) error {
+	q, err := r.Channel.QueueDeclare(
+		queueName, // name
+		true,      // durable
+		false,     // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		nil,       // arguments
+	)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	for _, msg := range messageTypes {
+		if err := r.Channel.QueueBind(
+			q.Name,   // queue name
+			msg,      // routing key
+			exchange, // exchange
+			false,
+			nil,
+		); err != nil {
+			return fmt.Errorf("failed to bind queue to %s: %v", queueName, err)
+		}
+	}
+
+	return nil
 }
 
 type MessageHandler func(context.Context, amqp.Delivery) error

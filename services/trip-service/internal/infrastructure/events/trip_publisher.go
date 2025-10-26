@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 
+	"github.com/atcheri/ride-booking-go/shared/contracts"
 	"github.com/atcheri/ride-booking-go/shared/messaging"
 )
 
@@ -17,9 +18,8 @@ func NewTripEventPublisher(rabbitmq *messaging.RabbitMQ) *TripEventPubliser {
 }
 
 func (p *TripEventPubliser) PublishTripCreated(ctx context.Context) error {
-	exchangeName := ""
-	queueName := "hello"
-	body := "Hello World!"
+	routingKey := contracts.TripEventCreated
+	body := "Trip has been created"
 
-	return p.rabbitmq.Publish(ctx, exchangeName, queueName, body)
+	return p.rabbitmq.Publish(ctx, routingKey, body)
 }
