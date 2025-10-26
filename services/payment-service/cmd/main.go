@@ -48,6 +48,7 @@ func main() {
 
 	paymentProcessor := payment.NewStripeClient(stripeCfg)
 	paymentService := service.NewPaymentService(paymentProcessor)
+	// FIXME: remove this later
 	log.Println(paymentService)
 
 	// RabbitMQ connection
