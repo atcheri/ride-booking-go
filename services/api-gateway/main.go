@@ -41,6 +41,7 @@ func main() {
 	mux.HandleFunc("POST /trip/start", enableCors(handleStartTrip))
 	mux.HandleFunc("/ws/drivers", handleDriversWebSocketWithRabbitMQ(rabbitMQ))
 	mux.HandleFunc("/ws/riders", handleRidersWebSocketWithRabbitMQ(rabbitMQ))
+	mux.HandleFunc("/webhook/stripe", handleStripWebhookWithRabbitMQ(rabbitMQ))
 
 	server := &http.Server{
 		Addr:    httpAddr,
