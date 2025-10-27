@@ -154,6 +154,7 @@ func handleRidersWebSocketWithRabbitMQ(rb *messaging.RabbitMQ) func(w http.Respo
 		queues := []string{
 			messaging.NotifyRiderNoDriversFoundQueue,
 			messaging.NotifyDriverAssignQueue,
+			messaging.NotifyPaymentSessionCreatedQueue,
 		}
 
 		for _, q := range queues {

@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/atcheri/ride-booking-go/services/payment-service/internal/events"
 	"github.com/atcheri/ride-booking-go/services/payment-service/internal/infrastructure/payment"
 	"github.com/atcheri/ride-booking-go/services/payment-service/internal/service"
 	"github.com/atcheri/ride-booking-go/services/payment-service/pkg/types"
@@ -46,11 +47,6 @@ func main() {
 		return
 	}
 
-	paymentProcessor := payment.NewStripeClient(stripeCfg)
-	paymentService := service.NewPaymentService(paymentProcessor)
-	// FIXME: remove this later
-	log.Println(paymentService)
-
 	// RabbitMQ connection
 	rabbitmq, err := messaging.NewRabbitMQ(rabbitmqURI)
 	if err != nil {
@@ -59,6 +55,13 @@ func main() {
 	defer rabbitmq.Close()
 
 	log.Println("payment-service connected to RabbitMQ")
+
+	paymentProcessor := payment.NewStripeClient(stripeCfg)
+	paymentService := service.NewPaymentService(paymentProcessor)
+
+	// start the trip-payment-consumer
+	tripPaymentConsumer := events.NewTripConsumer(rabbitmq, paymentService)
+	go tripPaymentConsumer.Listen()
 
 	// Wait for shutdown signal
 	<-ctx.Done()

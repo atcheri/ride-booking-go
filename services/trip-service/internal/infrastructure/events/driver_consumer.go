@@ -91,6 +91,7 @@ func (c *DriverConsumer) handleTripAccepted(ctx context.Context, tripID string, 
 		return err
 	}
 
+	// 4. notify the rider that the driver has been assigned
 	if err := c.rabbitmq.Publish(ctx, contracts.TripEventDriverAssigned, contracts.AmqpMessage{
 		OwnerID: trip.UserID,
 		Data:    marshalledTrip,
@@ -98,7 +99,27 @@ func (c *DriverConsumer) handleTripAccepted(ctx context.Context, tripID string, 
 		return err
 	}
 
-	// TODO: notify the payment service to start a payment link
+	// 5. create the json data to be sent to the payment processor
+	marshalledPayload, err := json.Marshal(messaging.PaymentTripResponseData{
+		TripID:   tripID,
+		UserID:   trip.UserID,
+		DriverID: driver.GetId(),
+		Amount:   trip.RideFare.TotalPriceInCents,
+		Currency: "EUR",
+	})
+	if err != nil {
+		log.Printf("failed to marshall trip payment response data: %v", err)
+		return err
+	}
+
+	// 6. publish the payment session creation event with the payload
+	if err := c.rabbitmq.Publish(ctx, contracts.PaymentCmdCreateSession, contracts.AmqpMessage{
+		OwnerID: trip.UserID,
+		Data:    marshalledPayload,
+	}); err != nil {
+		log.Printf("failed to publish the payment session creation event: %v", err)
+		return err
+	}
 
 	return nil
 }
