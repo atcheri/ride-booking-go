@@ -43,7 +43,12 @@ spec:
                 secretKeyRef:
                   name: stripe-secrets
                   key: stripe-secret-key
-
+            # Jeager
+            - name: JAEGER_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  key: JAEGER_ENDPOINT
+                  name: app-config
             # RabbitMQ credentials
             - name: RABBITMQ_DEFAULT_URI
               valueFrom:
