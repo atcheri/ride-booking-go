@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/atcheri/ride-booking-go/shared/contracts"
+	"github.com/atcheri/ride-booking-go/shared/tracing"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -140,16 +141,24 @@ func (r *RabbitMQ) Publish(ctx context.Context, routingKey string, message contr
 		return fmt.Errorf("failed to marshal message: %v", err)
 	}
 
+	msg := amqp.Publishing{
+		ContentType:  "application/json",
+		Body:         jsonMessage,
+		DeliveryMode: amqp.Persistent,
+	}
+
+	return tracing.TracedPublisher(ctx, TripExchange, routingKey, msg, r.publish)
+
+}
+
+func (r *RabbitMQ) publish(ctx context.Context, exchange, routingKey string, msg amqp.Publishing) error {
 	return r.Channel.PublishWithContext(ctx,
-		TripExchange, // exchange
-		routingKey,   // routing key
-		false,        // mandatory
-		false,        // immediate
-		amqp.Publishing{
-			ContentType:  "text/plain",
-			Body:         jsonMessage,
-			DeliveryMode: amqp.Persistent,
-		})
+		exchange,   // exchange
+		routingKey, // routing key
+		false,      // mandatory
+		false,      // immediate
+		msg,
+	)
 }
 
 func (r *RabbitMQ) declareAndBindQueue(queueName string, messageTypes []string, exchange string) error {
