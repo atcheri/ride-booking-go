@@ -13,13 +13,18 @@ import (
 	"github.com/atcheri/ride-booking-go/shared/contracts"
 	"github.com/atcheri/ride-booking-go/shared/env"
 	"github.com/atcheri/ride-booking-go/shared/messaging"
+	"github.com/atcheri/ride-booking-go/shared/tracing"
 )
 
 var (
 	tripServiceURL = env.GetString("TRIP_SERVICE_URL", "trip-service:9093")
+	tracer         = tracing.GetTracer("api-gateway")
 )
 
 func handleTripPreview(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handleTripPreview")
+	defer span.End()
+
 	var body tripPreviewRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -43,7 +48,7 @@ func handleTripPreview(w http.ResponseWriter, r *http.Request) {
 	// Closing the connection on each request
 	defer tripServiceClient.Close()
 
-	tripPreviewResp, err := tripServiceClient.Client.PreviewTrip(r.Context(), body.ToProto())
+	tripPreviewResp, err := tripServiceClient.Client.PreviewTrip(ctx, body.ToProto())
 	if err != nil {
 		log.Printf("failed to preview the trip: %v", err)
 		http.Error(w, "failed to preview the trip", http.StatusInternalServerError)
@@ -56,6 +61,9 @@ func handleTripPreview(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleStartTrip(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handleStartTrip")
+	defer span.End()
+
 	var body startTripRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -79,7 +87,7 @@ func handleStartTrip(w http.ResponseWriter, r *http.Request) {
 	// Closing the connection on each request
 	defer tripServiceClient.Close()
 
-	ceateTripResp, err := tripServiceClient.Client.CreateTrip(r.Context(), body.ToProto())
+	ceateTripResp, err := tripServiceClient.Client.CreateTrip(ctx, body.ToProto())
 	if err != nil {
 		log.Printf("failed to create the trip: %v", err)
 		http.Error(w, "failed to create the trip", http.StatusInternalServerError)
@@ -93,6 +101,9 @@ func handleStartTrip(w http.ResponseWriter, r *http.Request) {
 
 func handleStripWebhookWithRabbitMQ(rb *messaging.RabbitMQ) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := tracer.Start(r.Context(), "handleStripWebhookWithRabbitMQ")
+		defer span.End()
+
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "failed to read the request body", http.StatusInternalServerError)
@@ -146,7 +157,7 @@ func handleStripWebhookWithRabbitMQ(rb *messaging.RabbitMQ) func(w http.Response
 			}
 
 			if err := rb.Publish(
-				r.Context(),
+				ctx,
 				contracts.PaymentEventSuccess,
 				message,
 			); err != nil {
