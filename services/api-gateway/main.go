@@ -47,16 +47,15 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /hello", func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("GET /hello", tracing.WrapHandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Hello from API Gateway"))
-	})
-
-	mux.HandleFunc("POST /trip/preview", enableCors(handleTripPreview))
-	mux.HandleFunc("POST /trip/start", enableCors(handleStartTrip))
-	mux.HandleFunc("/ws/drivers", handleDriversWebSocketWithRabbitMQ(rabbitMQ))
-	mux.HandleFunc("/ws/riders", handleRidersWebSocketWithRabbitMQ(rabbitMQ))
-	mux.HandleFunc("/webhook/stripe", handleStripWebhookWithRabbitMQ(rabbitMQ))
+	}, "/hell"))
+	mux.Handle("POST /trip/preview", tracing.WrapHandlerFunc(enableCors(handleTripPreview), "/trip/preview"))
+	mux.Handle("POST /trip/start", tracing.WrapHandlerFunc(enableCors(handleStartTrip), "/trip/start"))
+	mux.Handle("/ws/drivers", tracing.WrapHandlerFunc(handleDriversWebSocketWithRabbitMQ(rabbitMQ), "/ws/drivers"))
+	mux.Handle("/ws/riders", tracing.WrapHandlerFunc(handleRidersWebSocketWithRabbitMQ(rabbitMQ), "/ws/riders"))
+	mux.Handle("/webhook/stripe", tracing.WrapHandlerFunc(handleStripWebhookWithRabbitMQ(rabbitMQ), "/webhook/stripe"))
 
 	server := &http.Server{
 		Addr:    httpAddr,
