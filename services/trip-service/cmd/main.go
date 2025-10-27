@@ -14,19 +14,32 @@ import (
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/service"
 	"github.com/atcheri/ride-booking-go/shared/env"
 	"github.com/atcheri/ride-booking-go/shared/messaging"
+	"github.com/atcheri/ride-booking-go/shared/tracing"
 	grpcserver "google.golang.org/grpc"
 )
 
 var (
-	gRPCAddr    = env.GetString("HTTP_ADDR", ":9093")
-	rabbitmqURI = env.GetString("RABBITMQ_DEFAULT_URI", "amqp://guest:guest@rabbitmq:56723/")
+	serviceName    = "trip-service"
+	environment    = env.GetString("ENVIRONMENT", "development")
+	jaegerEndpoint = env.GetString("JAEGER_ENDPOINT", "http://jaeger:14268/api/traces")
+	gRPCAddr       = env.GetString("HTTP_ADDR", ":9093")
+	rabbitmqURI    = env.GetString("RABBITMQ_DEFAULT_URI", "amqp://guest:guest@rabbitmq:56723/")
 )
 
 func main() {
 	inMemoryRepository := repository.NewInMemoryRepository()
 	tripService := service.NewTripService(inMemoryRepository)
+
+	// Initialize Tracing
+	tracerConfig := tracing.NewConfig(serviceName, environment, jaegerEndpoint)
+	shutDownTracer, err := tracing.InitTracer(tracerConfig)
+	if err != nil {
+		log.Fatalf("failed to initialize the tracer: %v", err)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	defer shutDownTracer(ctx)
 
 	// this go routine catches the sigterm or interrup signals and calls the context cancel function
 	// that will allow the gracefull shutdown at the end

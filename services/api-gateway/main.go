@@ -11,15 +11,30 @@ import (
 
 	"github.com/atcheri/ride-booking-go/shared/env"
 	"github.com/atcheri/ride-booking-go/shared/messaging"
+	"github.com/atcheri/ride-booking-go/shared/tracing"
 )
 
 var (
-	httpAddr    = env.GetString("HTTP_ADDR", ":8081")
-	rabbitmqURI = env.GetString("RABBITMQ_DEFAULT_URI", "amqp://guest:guest@rabbitmq:56723/")
+	serviceName    = "api-gateway"
+	environment    = env.GetString("ENVIRONMENT", "development")
+	jaegerEndpoint = env.GetString("JAEGER_ENDPOINT", "http://jaeger:14268/api/traces")
+	httpAddr       = env.GetString("HTTP_ADDR", ":8081")
+	rabbitmqURI    = env.GetString("RABBITMQ_DEFAULT_URI", "amqp://guest:guest@rabbitmq:56723/")
 )
 
 func main() {
 	log.Printf("Starting API Gateway on port: %s", httpAddr)
+
+	// Initialize Tracing
+	tracerConfig := tracing.NewConfig(serviceName, environment, jaegerEndpoint)
+	shutDownTracer, err := tracing.InitTracer(tracerConfig)
+	if err != nil {
+		log.Fatalf("failed to initialize the tracer: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer shutDownTracer(ctx)
 
 	// RabbitMQ connection
 	rabbitMQ, err := messaging.NewRabbitMQ(rabbitmqURI)

@@ -13,9 +13,13 @@ import (
 	"github.com/atcheri/ride-booking-go/services/payment-service/pkg/types"
 	"github.com/atcheri/ride-booking-go/shared/env"
 	"github.com/atcheri/ride-booking-go/shared/messaging"
+	"github.com/atcheri/ride-booking-go/shared/tracing"
 )
 
 var (
+	serviceName     = "payment-service"
+	environment     = env.GetString("ENVIRONMENT", "development")
+	jaegerEndpoint  = env.GetString("JAEGER_ENDPOINT", "http://jaeger:14268/api/traces")
 	rabbitmqURI     = env.GetString("RABBITMQ_DEFAULT_URI", "amqp://guest:guest@rabbitmq:56723/")
 	appURL          = env.GetString("APP_URL", "http://localhost:3000")
 	stripeSecretKey = env.GetString("STRIPE_SECRET_KEY", "")
@@ -24,9 +28,18 @@ var (
 )
 
 func main() {
-	// Setup graceful shutdown
+	// Initialize Tracing
+	tracerConfig := tracing.NewConfig(serviceName, environment, jaegerEndpoint)
+	shutDownTracer, err := tracing.InitTracer(tracerConfig)
+	if err != nil {
+		log.Fatalf("failed to initialize the tracer: %v", err)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	defer shutDownTracer(ctx)
+
+	// Setup graceful shutdown
 
 	go func() {
 		sigCh := make(chan os.Signal, 1)
