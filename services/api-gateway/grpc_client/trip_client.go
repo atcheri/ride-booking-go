@@ -1,6 +1,7 @@
 package grpcclient
 
 import (
+	"github.com/atcheri/ride-booking-go/shared/tracing"
 	pb "github.com/atcheri/ride-booking-grpc-proto/golang/trip"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -12,7 +13,11 @@ type tripServiceClient struct {
 }
 
 func NewTripServiceClient(url string) (*tripServiceClient, error) {
-	conn, err := grpc.NewClient(url, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	dialOptions := append(
+		tracing.DialOptionsWithTracing(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	conn, err := grpc.NewClient(url, dialOptions...)
 	if err != nil {
 		return nil, err
 	}
