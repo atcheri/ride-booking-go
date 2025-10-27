@@ -27,6 +27,7 @@ require (
 	github.com/mmcloughlin/geohash v0.10.0
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/stripe/stripe-go/v81 v81.4.0
+	go.opentelemetry.io/otel/exporters/jaeger v1.17.0
 	golang.org/x/net v0.46.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
