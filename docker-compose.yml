@@ -49,7 +49,7 @@ services:
   api-gateway:
     build:
       context: .
-      dockerfile: infra/development/docker/api-gateway.Dockerfile
+      dockerfile: infra/production/docker/api-gateway.Dockerfile
     container_name: ride-booking-api-gateway
     ports:
       - "8081:8081"
@@ -68,7 +68,7 @@ services:
   trip-service:
     build:
       context: .
-      dockerfile: infra/development/docker/trip-service.Dockerfile
+      dockerfile: infra/production/docker/trip-service.Dockerfile
     container_name: ride-booking-trip-service
     ports:
       - "9093:9093"
@@ -89,7 +89,7 @@ services:
   driver-service:
     build:
       context: .
-      dockerfile: infra/development/docker/driver-service.Dockerfile
+      dockerfile: infra/production/docker/driver-service.Dockerfile
     container_name: ride-booking-driver-service
     ports:
       - "9092:9092"
@@ -107,7 +107,7 @@ services:
   payment-service:
     build:
       context: .
-      dockerfile: infra/development/docker/payment-service.Dockerfile
+      dockerfile: infra/production/docker/payment-service.Dockerfile
     container_name: ride-booking-payment-service
     ports:
       - "9004:9004"
