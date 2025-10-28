@@ -12,6 +12,7 @@ import (
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/grpc"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/infrastructure/repository"
 	"github.com/atcheri/ride-booking-go/services/trip-service/internal/service"
+	"github.com/atcheri/ride-booking-go/shared/db"
 	"github.com/atcheri/ride-booking-go/shared/env"
 	"github.com/atcheri/ride-booking-go/shared/messaging"
 	"github.com/atcheri/ride-booking-go/shared/tracing"
@@ -27,9 +28,6 @@ var (
 )
 
 func main() {
-	inMemoryRepository := repository.NewInMemoryRepository()
-	tripService := service.NewTripService(inMemoryRepository)
-
 	// Initialize Tracing
 	tracerConfig := tracing.NewConfig(serviceName, environment, jaegerEndpoint)
 	shutDownTracer, err := tracing.InitTracer(tracerConfig)
@@ -47,7 +45,7 @@ func main() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 		<-sigCh
-		cancel()
+		// cancel()
 	}()
 
 	log.Printf("Starting the trip-service grpc server on port: %s", gRPCAddr)
@@ -56,6 +54,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+
+	// connect to mongo db
+	mongoClient, err := db.NewMongoClient(ctx, db.NewMongoDefaultConfig())
+	if err != nil {
+		log.Fatalf("failed to connect to MongoDB: %v", err)
+	}
+
+	defer mongoClient.Disconnect(ctx)
+
+	mongoDB := db.GetDatabase(mongoClient, db.NewMongoDefaultConfig())
+	mongoDBRepo := repository.NewMongoRepository(mongoDB)
+	tripService := service.NewTripService(mongoDBRepo)
 
 	// RAbbitMQ connection
 	rabbitMQ, err := messaging.NewRabbitMQ(rabbitmqURI)

@@ -15,6 +15,7 @@ import (
 const (
 	TripsCollection     = "trips"
 	RideFaresCollection = "ride_fares"
+	dbName              = "trip"
 )
 
 // MongoConfig holds MongoDB connection configuration
@@ -27,8 +28,7 @@ type MongoConfig struct {
 func NewMongoDefaultConfig() *MongoConfig {
 	return &MongoConfig{
 		URI:      os.Getenv("MONGODB_URI"),
-		Database: os.Getenv("MONGODB_DBNAME"),
-	}
+		Database: dbName}
 }
 
 // NewMongoClient creates a new MongoDB client
