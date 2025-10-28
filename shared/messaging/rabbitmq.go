@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/atcheri/ride-booking-go/shared/contracts"
+	"github.com/atcheri/ride-booking-go/shared/retry"
 	"github.com/atcheri/ride-booking-go/shared/tracing"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -218,17 +219,30 @@ func (r *RabbitMQ) Consume(queueName string, handler MessageHandler) error {
 	go func() {
 		for msg := range msgs {
 			if err := tracing.TracedConsumer(msg, func(ctx context.Context, d amqp.Delivery) error {
-
 				log.Printf("received a message: %s", msg.Body)
 
-				if err := handler(ctx, msg); err != nil {
-					log.Printf("ERROR: Failed to handle message: %v. Message body: %s", err, msg.Body)
+				cfg := retry.DefaultConfig()
+				err := retry.WithBackoff(ctx, cfg, func() error {
+					return handler(ctx, d)
+				})
 
-					if nackErr := msg.Nack(false, false); nackErr != nil {
-						log.Printf("ERROR: failed to Nack message: %V", nackErr)
-						return nackErr
+				if err != nil {
+					log.Printf("failed to  process message ID %s after %d retries: %V", d.MessageId, cfg.MaxRetries, err)
+
+					// add the failure context before sending to the DLQ
+					headers := amqp.Table{}
+					if d.Headers != nil {
+						headers = d.Headers
 					}
 
+					headers["x-retry-count"] = cfg.MaxRetries
+					headers["x-death-reason"] = err.Error()
+					headers["x-original-routing-key"] = d.RoutingKey
+					headers["x-origin-exchange"] = d.Exchange
+					d.Headers = headers
+
+					// reject without requeue - the message will gfo to the DLQ
+					_ = d.Reject(false)
 					return err
 				}
 
