@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	TripExchange = "trip"
+	TripExchange       = "trip"
+	DeadLetterExchange = "dead-letter-exchange"
 )
 
 type RabbitMQ struct {
@@ -56,7 +57,12 @@ func (r *RabbitMQ) Close() {
 }
 
 func (r *RabbitMQ) setupExchangesAndQueues() error {
-	err := r.Channel.ExchangeDeclare(
+	// first, setup the DLQ exchange and queue
+	if err := r.setupDeadLetterExchange(); err != nil {
+		return err
+	}
+
+	if err := r.Channel.ExchangeDeclare(
 		TripExchange, // name
 		"topic",      // type
 		true,         // durable
@@ -64,9 +70,8 @@ func (r *RabbitMQ) setupExchangesAndQueues() error {
 		false,        // internal
 		false,        // no-wait
 		nil,          // arguments
-	)
-	if err != nil {
-		return fmt.Errorf("failed to declaare the topic: %v", err)
+	); err != nil {
+		return fmt.Errorf("failed to declare the topic: %v", err)
 	}
 
 	if err := r.declareAndBindQueue(
@@ -136,6 +141,44 @@ func (r *RabbitMQ) setupExchangesAndQueues() error {
 	return nil
 }
 
+func (r *RabbitMQ) setupDeadLetterExchange() error {
+	if err := r.Channel.ExchangeDeclare(
+		DeadLetterExchange, // name
+		"topic",            // type
+		true,               // durable
+		false,              // auto-deleted
+		false,              // internal
+		false,              // no-wait
+		nil,                // arguments
+	); err != nil {
+		return fmt.Errorf("failed to declare the dead letter exchange: %v", err)
+	}
+
+	q, err := r.Channel.QueueDeclare(
+		DeadLetterQueue,
+		true,  // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare the dead letter queue: %v", err)
+	}
+
+	if err := r.Channel.QueueBind(
+		q.Name,             // queue name
+		"#",                // wildcard routing key to catch all messages
+		DeadLetterExchange, // exchange
+		false,
+		nil,
+	); err != nil {
+		return fmt.Errorf("failed to bind dead letter queue to %s: %v", DeadLetterExchange, err)
+	}
+
+	return nil
+}
+
 func (r *RabbitMQ) Publish(ctx context.Context, routingKey string, message contracts.AmqpMessage) error {
 	jsonMessage, err := json.Marshal(message)
 	if err != nil {
@@ -163,13 +206,18 @@ func (r *RabbitMQ) publish(ctx context.Context, exchange, routingKey string, msg
 }
 
 func (r *RabbitMQ) declareAndBindQueue(queueName string, messageTypes []string, exchange string) error {
+	// add dead letter configuration
+	args := amqp.Table{
+		"x-dead-letter-exchange": DeadLetterExchange,
+	}
+
 	q, err := r.Channel.QueueDeclare(
 		queueName, // name
 		true,      // durable
 		false,     // delete when unused
 		false,     // exclusive
 		false,     // no-wait
-		nil,       // arguments
+		args,      // arguments
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -184,7 +232,7 @@ func (r *RabbitMQ) declareAndBindQueue(queueName string, messageTypes []string, 
 			false,
 			nil,
 		); err != nil {
-			return fmt.Errorf("failed to bind queue to %s: %v", queueName, err)
+			return fmt.Errorf("failed to bind queue to %s: %v", exchange, err)
 		}
 	}
 
