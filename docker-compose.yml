@@ -1,6 +1,29 @@
 version: '3.8'
 
 services:
+  # Database
+  mongodb:
+    image: mongo:7.0
+    container_name: ride-booking-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-trip}
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ride-booking-network
+    restart: unless-stopped
+
   # Message Broker
   rabbitmq:
     image: rabbitmq:3-management
@@ -52,8 +75,11 @@ services:
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       RABBITMQ_DEFAULT_URI: amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672/
+      MONGODB_URI: mongodb://${MONGODB_USER:-admin}:${MONGODB_PASSWORD:-password}@mongodb:27017/${MONGODB_DATABASE:-trip}?authSource=admin
     depends_on:
       rabbitmq:
+        condition: service_healthy
+      mongodb:
         condition: service_healthy
     networks:
       - ride-booking-network
@@ -108,8 +134,6 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8081}
-      NEXT_PUBLIC_WEBSOCKET_URL: ${NEXT_PUBLIC_WEBSOCKET_URL:-ws://localhost:8081/ws}
     depends_on:
       - api-gateway
     networks:
@@ -117,6 +141,10 @@ services:
     restart: unless-stopped
 
 volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
   rabbitmq_data:
     driver: local
 
