@@ -50,7 +50,7 @@ func main() {
 	mux.Handle("GET /hello", tracing.WrapHandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Hello from API Gateway"))
-	}, "/hell"))
+	}, "/hello"))
 	mux.Handle("POST /trip/preview", tracing.WrapHandlerFunc(enableCors(handleTripPreview), "/trip/preview"))
 	mux.Handle("POST /trip/start", tracing.WrapHandlerFunc(enableCors(handleStartTrip), "/trip/start"))
 	mux.Handle("/ws/drivers", tracing.WrapHandlerFunc(handleDriversWebSocketWithRabbitMQ(rabbitMQ), "/ws/drivers"))
